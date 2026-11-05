@@ -1,0 +1,6 @@
+{
+  "name": "StudyForge",
+  "description": "AI-powered study companion with notes, flashcards, MCQs, physics simulations, voice tutor, coding practice, and smart planner.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

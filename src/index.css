@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background-color: #f6f2eb; /* Warm Light Beige Background */
+    color: #3b2a1d; /* Deep Warm Espresso Text */
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #eadecc;
+}
+::-webkit-scrollbar-thumb {
+  background: #b59275;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #967256;
+}
+
+.beige-box, .lavender-box {
+  background-color: #ede6da; /* Soft warm beige box tint */
+  border: 1px solid rgba(160, 120, 80, 0.25);
+}
+
+.glass-card {
+  background: rgba(237, 230, 218, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(160, 120, 80, 0.25);
+}
+
+.glow-beige {
+  box-shadow: 0 0 25px -5px rgba(180, 130, 80, 0.2);
+}
