@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Navbar } from './components/Navbar';
 import { Dashboard } from './components/dashboard/Dashboard';
+import { AIChatWorkspace } from './components/chat/AIChatWorkspace';
 import { NotesWorkspace } from './components/notes/NotesWorkspace';
 import { MCQQuizEngine } from './components/mcq/MCQQuizEngine';
 import { FlashcardSystem } from './components/flashcards/FlashcardSystem';
-import { PhysicsSimLab } from './components/physics/PhysicsSimLab';
 import { CodingPractice } from './components/coding/CodingPractice';
 import { EnglishMCQs } from './components/english/EnglishMCQs';
 import { SmartStudyPlanner } from './components/planner/SmartStudyPlanner';
@@ -23,10 +23,10 @@ export default function App() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'dashboard' && <Dashboard user={user} subjects={subjects} setActiveTab={setActiveTab} />}
+        {activeTab === 'ai-chat' && <AIChatWorkspace />}
         {activeTab === 'notes' && <NotesWorkspace />}
         {activeTab === 'mcq' && <MCQQuizEngine />}
         {activeTab === 'flashcards' && <FlashcardSystem />}
-        {activeTab === 'physics' && <PhysicsSimLab />}
         {activeTab === 'coding' && <CodingPractice />}
         {activeTab === 'english' && <EnglishMCQs />}
         {activeTab === 'planner' && <SmartStudyPlanner />}

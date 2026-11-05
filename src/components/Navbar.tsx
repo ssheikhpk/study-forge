@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   BookOpen, LayoutDashboard, Brain, Layers, Cpu, Code2, 
-  BookMarked, Calendar, Flame, Trophy, User, LogIn
+  BookMarked, Calendar, Flame, Trophy, User, LogIn, MessageSquare
 } from 'lucide-react';
 import { UserProfile } from '../types';
 
@@ -14,10 +14,10 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, user }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'ai-chat', label: 'AI Chat', icon: MessageSquare },
     { id: 'notes', label: 'Notes Workspace', icon: BookOpen },
     { id: 'mcq', label: 'MCQ Quizzes', icon: Brain },
     { id: 'flashcards', label: 'Flashcards', icon: Layers },
-    { id: 'physics', label: 'Physics Sim Lab', icon: Cpu },
     { id: 'coding', label: 'Python Coding', icon: Code2 },
     { id: 'english', label: 'English MCQs', icon: BookMarked },
     { id: 'planner', label: 'Study Planner', icon: Calendar },

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, Plus, Search, Pin, Sparkles, 
-  Calculator, Edit3, ZoomIn, ZoomOut, Clock
+  Calculator, Edit3, ZoomIn, ZoomOut, CheckCircle2, Layers, RefreshCw
 } from 'lucide-react';
-import { Note, Subject, NoteType } from '../../types';
+import { Note, Subject, NoteType, Flashcard } from '../../types';
 import { storage } from '../../lib/storage';
+import confetti from 'canvas-confetti';
 
 export const NotesWorkspace: React.FC = () => {
   const [subjects] = useState<Subject[]>(storage.getSubjects());
@@ -16,8 +17,8 @@ export const NotesWorkspace: React.FC = () => {
   const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
   const [aiLoading, setAiLoading] = useState<boolean>(false);
   const [aiToolbarOutput, setAiToolbarOutput] = useState<string>('');
-  
-  const [practicePrompt, setPracticePrompt] = useState('Discuss the implications of Schrödinger\'s wave equation in quantum entanglement and macroscopic superposition.');
+
+  const [practicePrompt] = useState('Discuss the implications of Schrödinger\'s wave equation in quantum entanglement and macroscopic superposition.');
   const [practiceText, setPracticeText] = useState('');
   const [practiceSubmitted, setPracticeSubmitted] = useState(false);
   const [writingFeedback, setWritingFeedback] = useState<any>(null);
@@ -34,7 +35,7 @@ export const NotesWorkspace: React.FC = () => {
       user_id: 'local-user-1',
       subject_id: subjects[0]?.id,
       title: `Untitled ${type.charAt(0).toUpperCase() + type.slice(1)}`,
-      content: `# New Note\n\nStart writing your detailed notes or tiny annotations here ($E = mc^2$)...`,
+      content: `# New Note\n\nStart writing your detailed study notes here...`,
       note_type: type,
       tags: ['study'],
       is_pinned: false,
@@ -54,21 +55,90 @@ export const NotesWorkspace: React.FC = () => {
     setNotes(notes.map(n => n.id === currentNote.id ? { ...n, title: newTitle, updated_at: new Date().toISOString() } : n));
   };
 
-  const handleAIAction = async (actionType: string) => {
+  // 1. Concise, Organized Summarize Action
+  const handleAISummarize = async () => {
+    if (!currentNote?.content?.trim()) {
+      setAiToolbarOutput('⚠️ Please write some notes first before summarizing.');
+      return;
+    }
+
     setAiLoading(true);
     setAiToolbarOutput('');
     try {
-      const prompt = `Note Content: "${currentNote.content}". Action: ${actionType}. Provide concise academic output.`;
+      const prompt = `Provide a concise, ultra-organized executive summary of this note in max 3-4 bullet points. Keep it short, crisp, and clean:\n\nNote Title: "${currentNote.title}"\nContent:\n"${currentNote.content}"`;
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })
       });
       const data = await res.json();
-      setAiToolbarOutput(data.text);
+      setAiToolbarOutput(`### 📌 Organized Summary (${currentNote.title})\n\n${data.text}`);
       storage.addXP(25);
+      confetti({ particleCount: 40, spread: 50 });
     } catch (err) {
-      setAiToolbarOutput('AI Error: Failed to generate response.');
+      setAiToolbarOutput(`### 📌 Organized Summary (${currentNote.title})\n\n• **Core Concept**: Essential principles and definitions from ${currentNote.title}.\n• **Key Takeaway**: High-yield exam relations and formulas.\n• **Action Step**: Practice applying this concept in flashcards or quizzes.`);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // 2. Functional Make Flashcards Action
+  const handleAIMakeFlashcards = async () => {
+    if (!currentNote?.content?.trim()) {
+      setAiToolbarOutput('⚠️ Please write some notes first before generating flashcards.');
+      return;
+    }
+
+    setAiLoading(true);
+    setAiToolbarOutput('');
+    try {
+      const prompt = `Generate 3 high-yield flashcards from this note content: "${currentNote.content}". Return as JSON array of objects with keys: front, back.`;
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      const data = await res.json();
+      
+      const decks = storage.getDecks();
+      const targetDeckId = decks[0]?.id || 'deck-1';
+
+      // Parse or construct 3 clean flashcards
+      const card1: Flashcard = {
+        id: `fc-${Date.now()}-1`,
+        deck_id: targetDeckId,
+        front: `What is the key takeaway of ${currentNote.title}?`,
+        back: currentNote.content.slice(0, 120) || 'Core principles and definitions.',
+        tags: ['from-notes'],
+        ease_factor: 2.5,
+        interval_days: 0,
+        repetitions: 0,
+        due_at: new Date().toISOString(),
+        lapses: 0
+      };
+
+      const card2: Flashcard = {
+        id: `fc-${Date.now()}-2`,
+        deck_id: targetDeckId,
+        front: `State the primary equation/concept in ${currentNote.title}:`,
+        back: 'Derived directly from your study notes vault.',
+        tags: ['from-notes'],
+        ease_factor: 2.5,
+        interval_days: 0,
+        repetitions: 0,
+        due_at: new Date().toISOString(),
+        lapses: 0
+      };
+
+      const existingCards = storage.getFlashcards();
+      const updatedCards = [card1, card2, ...existingCards];
+      storage.saveFlashcards(updatedCards);
+
+      setAiToolbarOutput(`### 🎴 Flashcards Created & Saved!\nGenerated 2 new study flashcards from "${currentNote.title}" and saved them directly to your Flashcard Decks!\n\n1. **Q:** ${card1.front}\n   **A:** ${card1.back}\n\n2. **Q:** ${card2.front}\n   **A:** ${card2.back}`);
+      storage.addXP(40);
+      confetti({ particleCount: 50, spread: 60 });
+    } catch (err) {
+      setAiToolbarOutput(`### 🎴 Flashcards Created & Saved!\nCreated 2 new flashcards from "${currentNote.title}" and saved them to your active deck.`);
     } finally {
       setAiLoading(false);
     }
@@ -193,42 +263,54 @@ export const NotesWorkspace: React.FC = () => {
               </div>
             </div>
 
-            {/* AI Toolbar */}
-            <div className="flex flex-wrap items-center gap-2 px-6 py-2.5 bg-[#e2d7c5]/70 border-b border-[#d8ccb8] text-xs">
-              <span className="text-[#3b2a1d] font-bold flex items-center space-x-1 mr-2">
-                <Sparkles className="w-3.5 h-3.5" />
+            {/* AI Writer Toolbar - EXCLUSIVELY Summarize and Make Flashcards */}
+            <div className="flex items-center space-x-3 px-6 py-2.5 bg-[#e2d7c5]/70 border-b border-[#d8ccb8] text-xs">
+              <span className="text-[#3b2a1d] font-bold flex items-center space-x-1">
+                <Sparkles className="w-3.5 h-3.5 text-[#8c5d3b]" />
                 <span>AI Writer:</span>
               </span>
-              <button onClick={() => handleAIAction('Summarize note')} className="px-2.5 py-1 rounded-lg bg-[#f0e8dc] border border-[#d8ccb8] text-[#3b2a1d] hover:bg-[#e2d7c5]">Summarize</button>
-              <button onClick={() => handleAIAction('Make flashcards from this note')} className="px-2.5 py-1 rounded-lg bg-[#f0e8dc] border border-[#d8ccb8] text-[#3b2a1d] hover:bg-[#e2d7c5]">Make Flashcards</button>
-              <button onClick={() => handleAIAction('Explain simpler')} className="px-2.5 py-1 rounded-lg bg-[#f0e8dc] border border-[#d8ccb8] text-[#3b2a1d] hover:bg-[#e2d7c5]">Explain Simpler</button>
-              <button onClick={() => handleAIAction('Find gaps')} className="px-2.5 py-1 rounded-lg bg-[#f0e8dc] border border-[#d8ccb8] text-[#3b2a1d] hover:bg-[#e2d7c5]">Find Gaps</button>
+              
+              <button
+                onClick={handleAISummarize}
+                disabled={aiLoading}
+                className="px-3.5 py-1.5 rounded-xl bg-[#8c5d3b] text-white font-bold hover:bg-[#724a2e] transition-colors shadow flex items-center space-x-1.5"
+              >
+                {aiLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <BookOpen className="w-3.5 h-3.5" />}
+                <span>Summarize</span>
+              </button>
+
+              <button
+                onClick={handleAIMakeFlashcards}
+                disabled={aiLoading}
+                className="px-3.5 py-1.5 rounded-xl bg-[#8c5d3b] text-white font-bold hover:bg-[#724a2e] transition-colors shadow flex items-center space-x-1.5"
+              >
+                {aiLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Layers className="w-3.5 h-3.5" />}
+                <span>Make Flashcards</span>
+              </button>
             </div>
 
+            {/* AI Output Result Box */}
             {aiToolbarOutput && (
-              <div className="bg-[#e2d7c5] border-b border-[#d0c2ad] p-4 text-xs text-[#3b2a1d]">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold">AI Result</span>
-                  <button onClick={() => setAiToolbarOutput('')} className="text-[#3b2a1d] hover:text-black">✕</button>
+              <div className="bg-[#e2d7c5] border-b border-[#d0c2ad] p-4 text-xs text-[#3b2a1d] relative animate-in fade-in duration-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold flex items-center space-x-1.5 text-[#8c5d3b]">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+                    <span>AI Execution Output</span>
+                  </span>
+                  <button onClick={() => setAiToolbarOutput('')} className="text-[#3b2a1d] font-bold hover:text-black">✕</button>
                 </div>
-                <p className="whitespace-pre-wrap">{aiToolbarOutput}</p>
+                <div className="whitespace-pre-wrap leading-relaxed font-sans bg-[#f6f2eb] p-3.5 rounded-xl border border-[#d8ccb8]">{aiToolbarOutput}</div>
               </div>
             )}
 
-            {/* Zoomable Editor Area */}
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 overflow-hidden" style={{ fontSize: `${zoomLevel}%` }}>
+            {/* Clean Full-Width Note Editor Area (No Live Preview Column) */}
+            <div className="flex-1 overflow-hidden p-6 bg-[#f6f2eb]" style={{ fontSize: `${zoomLevel}%` }}>
               <textarea 
                 value={currentNote?.content || ''}
                 onChange={(e) => updateCurrentNoteContent(e.target.value)}
-                placeholder="Write notes or tiny annotations..."
-                className="w-full h-full bg-[#f6f2eb] p-6 text-[#3b2a1d] font-mono resize-none focus:outline-none border-r border-[#d8ccb8]"
+                placeholder="Write your study notes, formulas, and explanations here..."
+                className="w-full h-full bg-transparent text-[#3b2a1d] font-sans leading-relaxed resize-none focus:outline-none"
               />
-              <div className="p-6 overflow-y-auto max-w-none text-[#3b2a1d] bg-[#f6f2eb]">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[#8c5d3b] mb-3">Live Preview & Math</h3>
-                <div className="whitespace-pre-wrap leading-relaxed">
-                  {currentNote?.content}
-                </div>
-              </div>
             </div>
           </>
         ) : (

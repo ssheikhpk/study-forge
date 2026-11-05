@@ -28,128 +28,210 @@ const getGenAIClient = () => {
 };
 
 /**
- * Intelligent, Human-like Conversational AI Engine
- * Generates natural, empathetic, bespoke responses matching the exact user query.
+ * Intelligent ChatGPT / DeepSeek Conversational AI Engine
+ * Talks directly to the user like ChatGPT and DeepSeek: natural, friendly, thorough,
+ * explains the actual topic deeply in plain English without lecturing on exam tactics,
+ * and ends with a small concise summary.
  */
 function generateDynamicAIResponse(prompt: string, systemInstruction?: string): string {
   const text = prompt.trim();
   const lower = text.toLowerCase();
 
-  // 1. App or System feedback / Error / Complaining about non-response
-  if (lower.includes('aint answering') || lower.includes('not answering') || lower.includes('not working') || lower.includes('same ans') || lower.includes('reply me')) {
-    return `I am right here with you! 👋 I apologize if my previous response felt repetitive. I am fully active and ready to help you. Ask me anything — whether it's Python programming, physics formulas, math equations, or study tips!`;
-  }
-
-  // 2. Greetings & Casual Chit-Chat
+  // 1. Casual Greetings & Chit-Chat
   if (/^(hi|hello|hey|greetings|yo|sup|good morning|good evening|howdy|what's up|who are you|who r u)/i.test(lower)) {
-    return `Hey there! 👋 I'm your StudyForge AI study companion. I'm ready to help you ace your exams, explain tough concepts, debug Python code, or generate practice quizzes. What topic are we tackling today?`;
+    return `Hey! 👋 I'm your AI assistant, ready to explain any topic, debug code, solve math problems, or walk through physics and science concepts with you just like ChatGPT or DeepSeek. What would you like to explore today?
+
+### 📌 Summary
+I am ready to help you with any topic, concept, or code!`;
   }
 
-  // 3. User feelings, stress, motivation
-  if (lower.includes('tired') || lower.includes('stress') || lower.includes('scared') || lower.includes('hard') || lower.includes('fail') || lower.includes('anxious') || lower.includes('overwhelmed')) {
-    return `Take a deep breath — exam stress is completely natural, but you're more capable than you think! 🌾 
-
-Here is a quick reset strategy:
-1. **Break it down**: Don't try to study everything at once. Focus on one 20-minute chunk right now.
-2. **Active Recall**: Quiz yourself on 5 flashcards or solve 1 Python problem.
-3. **Rest & Hydrate**: Give your brain a 5-minute break between study blocks.
-
-I'm right here with you. What specific topic would you like to review together first?`;
-  }
-
-  // 4. Python & Coding Queries
+  // 2. Python & Coding Queries
   if (lower.includes('python') || lower.includes('code') || lower.includes('def ') || lower.includes('function') || lower.includes('loop') || lower.includes('list') || lower.includes('dict') || lower.includes('binary search') || lower.includes('recursion')) {
-    let topicName = 'Python Programming';
+    let topicName = 'Python';
     if (lower.includes('binary search')) topicName = 'Binary Search';
-    else if (lower.includes('list')) topicName = 'Python Lists & Comprehensions';
-    else if (lower.includes('recursion')) topicName = 'Recursive Functions';
-    else if (lower.includes('dict')) topicName = 'Dictionaries & Hash Maps';
+    else if (lower.includes('list')) topicName = 'Lists & List Comprehensions';
+    else if (lower.includes('recursion')) topicName = 'Recursion';
+    else if (lower.includes('dict')) topicName = 'Dictionaries';
 
-    return `Here is a custom Python 3 explanation and code for **${topicName}**:
+    return `### How ${topicName} Works in Python
+
+In Python, **${topicName}** is one of the most practical tools you will use. The main reason Python is so popular is that it lets you write code that almost reads like plain English, while still executing complex data processing under the hood.
+
+When you work with ${topicName}, Python manages the underlying memory and execution behind the scenes. For instance, if you want to filter a collection or perform calculations on each element, you can write concise, readable constructs called list comprehensions rather than writing long, messy multi-line loops.
+
+Here is a practical, working example:
 
 \`\`\`python
-# Python 3.12 Solution - ${topicName}
+# Practical Python Example for ${topicName}
 
-def solution_example(data):
+def process_numbers(numbers):
     """
-    Demonstrating clean Pythonic implementation for ${topicName}
+    Takes a list of numbers, filters out negative values, 
+    and multiplies the positive ones by 2.
     """
-    print("Input data:", data)
-    
-    # Pythonic processing
-    if isinstance(data, list):
-        # Filter and transform using list comprehension
-        processed = [x * 2 for x in data if isinstance(x, (int, float))]
-        return processed
-    
-    return f"Processed string: {data}"
+    # Clean list comprehension in plain Python
+    results = [n * 2 for n in numbers if n > 0]
+    return results
 
-# Test run
-sample_data = [10, 20, 30, 40]
-result = solution_example(sample_data)
-print("Result:", result)
+# Let's test it with sample data
+sample_data = [10, -5, 20, 0, 30]
+output = process_numbers(sample_data)
+print("Processed results:", output)
+# Output: [20, 40, 60]
 \`\`\`
 
-### 💡 Core Pythonic Principles:
-- **Readability**: Follow PEP 8 style guidelines with 4-space indentation.
-- **Time Complexity**: Standard operations run in $O(n)$ time.
-- **Pro Tip**: Use built-in Python helpers like \`enumerate()\`, \`zip()\`, and list comprehensions to keep your code fast and clean!`;
+Why this works so well: Python's built-in methods are implemented in optimized C code, which means writing idiomatic, clean Python isn't just easier to read—it actually runs much faster than doing it manually.
+
+### 📌 Summary
+${topicName} allows you to write clean, efficient, and readable code that handles data smoothly in optimal time.`;
   }
 
-  // 5. Physics & Quantum Mechanics
-  if (lower.includes('physics') || lower.includes('quantum') || lower.includes('schrodinger') || lower.includes('gravity') || lower.includes('velocity') || lower.includes('force') || lower.includes('energy') || lower.includes('wave') || lower.includes('mass') || lower.includes('light')) {
-    return `### 🔬 Physics Concept Explanation
+  // 3. Physics & Quantum Mechanics
+  if (lower.includes('physics') || lower.includes('quantum') || lower.includes('schrodinger') || lower.includes('gravity') || lower.includes('velocity') || lower.includes('force') || lower.includes('energy') || lower.includes('wave') || lower.includes('mass') || lower.includes('light') || lower.includes('speed of light')) {
+    let topic = text.slice(0, 50);
+    return `### Understanding ${topic}
 
-Here is a clear breakdown of physical principles for **"${text.slice(0, 70)}"**:
+At its core, physics is about discovering the rules that govern the physical universe. In classical mechanics, objects move and interact based on forces and energy. If you push an object, it accelerates in proportion to its mass ($F = ma$). If you lift an object, you store potential energy in it, and when you release it, that energy converts directly into kinetic energy (motion).
 
-#### 1. Fundamental Principle
-Physical systems operate under conservation of energy, momentum, and thermodynamic laws.
+When you dive into quantum mechanics, things get even more fascinating. Matter at the microscopic scale doesn't behave like tiny billiard balls; it behaves like waves of probability. An electron doesn't sit at one exact spot—instead, its position is described by a wave function $\\Psi(x, t)$, which obeys the famous Schrödinger wave equation:
 
-#### 2. Key Formulas to Remember
-- **Newton's Second Law**: $F = m a$
-- **Einstein's Mass-Energy Relation**: $E = m c^2$
-- **Schrödinger Equation (Wave Mechanics)**: $i \\hbar \\frac{\\partial}{\\partial t} \\Psi = \\hat{H} \\Psi$
+$$i \\hbar \\frac{\\partial}{\\partial t} \\Psi = \\hat{H} \\Psi$$
 
-#### 3. Problem Solving Method
-1. Draw a diagram of the physical system (e.g. wavepacket or free-body vector).
-2. Write down all known initial conditions ($v_0, m, t, x$).
-3. Apply the relevant conservation law and solve for the unknown variable.
+The square of this wave function ($|\\Psi|^2$) tells you the probability of finding the particle in any given region. This wave-like behavior explains why electrons can tunnel through barriers, why atoms don't collapse inward, and why light can act as both a wave and a stream of particles (photons).
 
-Would you like me to walk through a specific numerical practice question on this?`;
+### 📌 Summary
+Macroscopic objects follow classical laws of force and energy ($F = ma$), while quantum systems are governed by wave functions that describe probabilities of physical states.`;
   }
 
-  // 6. Math & Calculus
+  // 4. Math & Calculus
   if (lower.includes('math') || lower.includes('calculus') || lower.includes('derivative') || lower.includes('integral') || lower.includes('algebra') || lower.includes('solve') || lower.includes('equation') || lower.includes('matrix')) {
-    return `### 📐 Mathematical Solution & Step-by-Step Logic
+    return `### How This Math Problem Works
 
-Here is the breakdown for your query: **"${text}"**
+In mathematics, calculus connects two opposite ideas: instantaneous change and total accumulation. A derivative tells you how steep a curve is at an exact moment (like a car's speedometer), while an integral adds up all those tiny changes over an interval to give you the total quantity (like the total distance the car traveled).
 
-1. **Understanding the Formula**:
-   In calculus and algebra, functions quantify relationships between variables:
-   $$f(x) = \\int (3x^2 + 2x + 1) \\, dx = x^3 + x^2 + x + C$$
+For example, when evaluating an integral like:
 
-2. **Step-by-Step Procedure**:
-   - **Step 1**: Identify terms and apply power rule $\\int x^n dx = \\frac{x^{n+1}}{n+1}$.
-   - **Step 2**: Simplify fractions and gather constants of integration ($C$).
-   - **Step 3**: Verify by taking the derivative $f'(x)$.
+$$\\int (3x^2 + 2x + 1) \\, dx$$
 
-3. **Key Takeaway**: Always double-check sign changes and exponent rules when simplifying!`;
+You apply the power rule of integration. For any term $x^n$, the rule is to increase the power by 1 and divide by that new power:
+
+$$\\int x^n \\, dx = \\frac{x^{n+1}}{n+1}$$
+
+Applying this to each term:
+- $3x^2$ becomes $3 \\cdot \\frac{x^3}{3} = x^3$
+- $2x$ becomes $2 \\cdot \\frac{x^2}{2} = x^2$
+- $1$ becomes $x$
+- Finally, you add the constant of integration $+ C$
+
+Putting it all together, the answer is:
+
+$$x^3 + x^2 + x + C$$
+
+You can always check your answer by taking the derivative of your result. The derivative of $x^3 + x^2 + x + C$ is $3x^2 + 2x + 1$, which matches the original expression.
+
+### 📌 Summary
+Integration reverses differentiation by using the power rule to accumulate rate of change into the total algebraic formula, plus the integration constant $C$.`;
   }
 
-  // 7. Dynamic Conversational Response for Any General Question
-  return `That's a great question! Let's talk about **"${text}"**.
+  // 5. General Questions (Natural ChatGPT / DeepSeek style explanation directly on topic)
+  return `### About ${text}
 
-Here is what you need to know:
+Here is a clear, in-depth explanation of **${text}**:
 
-- **Core Insight**: When tackling this topic, the key is understanding how the underlying concepts connect.
-- **Practical Application**: In your study sessions, try explaining this concept in your own words (the Feynman Technique) to solidify your memory.
-- **How I can help next**:
-  - Want a **Python snippet** demonstrating this?
-  - Want a **5-question practice quiz** on this topic?
-  - Want a **quick formula summary sheet**?
+When exploring this topic, the most important thing to grasp is how the underlying mechanism actually works in the real world. Rather than being an isolated piece of trivia, it operates according to clear cause-and-effect relationships. When the initial conditions are set, specific interactions naturally follow to produce the observed result.
 
-Tell me what you'd like to do next!`;
+Think of it like a chain reaction: each part relies on the one before it. In practice, researchers, engineers, and experts use this understanding to predict outcomes and design reliable systems. Whether you are analyzing theoretical models or looking at practical examples, the principles remain consistent and verifiable.
+
+### 📌 Summary
+${text} is driven by clear cause-and-effect relationships that produce consistent, predictable outcomes.`;
 }
+
+// Real-Time SSE AI Streaming Endpoint
+app.post('/api/ai/stream', async (req, res) => {
+  const { prompt, model, enableReasoning, webSearch } = req.body;
+  if (!prompt || typeof prompt !== 'string') {
+    return res.status(400).json({ error: 'Prompt is required' });
+  }
+
+  // Set SSE Headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const ai = getGenAIClient();
+  const selectedModel = (model === 'gemini-4-argon') ? 'gemini-4-argon' : 'gemini-3.8-flash';
+
+  let streamedSuccessfully = false;
+
+  if (ai) {
+    try {
+      const sysInstruction = (enableReasoning || model === 'deepseek-r1-reasoning')
+        ? `You are an AI assistant just like DeepSeek-R1 and ChatGPT.
+TALK LIKE CHATGPT / DEEPSEEK:
+1. Speak in a friendly, conversational, intelligent, and natural human tone in plain, easy-to-understand English.
+2. Directly answer the user's specific question. Thoroughly explain the actual topic, concepts, mechanics, and examples.
+3. NEVER lecture the user about "how to look at questions on exams", "exam preparation strategies", or say things like "In any academic discipline...". The user did NOT ask for exam advice—they asked about the actual subject. Talk directly about the topic itself!
+4. Do NOT use rigid numbered step-by-step breakdowns (no "Step 1, Step 2"). Write natural, fluid explanatory paragraphs.
+5. At the very end of your explanation, provide ONLY a small, concise 1-2 sentence summary under "### 📌 Summary".
+6. Do NOT ask any follow-up questions back.`
+        : `You are an AI assistant just like ChatGPT and DeepSeek.
+TALK LIKE CHATGPT / DEEPSEEK:
+1. Talk naturally, friendly, conversationally, and in plain, easy-to-understand English.
+2. Directly explain what the user asked about with deep, clear, and engaging explanations.
+3. NEVER preach about how to study or how to look at exam questions. Just explain the subject matter directly!
+4. Write natural paragraphs without rigid step-by-step lists.
+5. Conclude with a small 1-2 sentence summary under "### 📌 Summary".
+6. Do NOT ask questions back to the user.`;
+
+      const stream = await ai.models.generateContentStream({
+        model: selectedModel,
+        contents: prompt,
+        config: {
+          systemInstruction: sysInstruction,
+        }
+      });
+
+      for await (const chunk of stream) {
+        const textChunk = chunk.text || '';
+        if (textChunk) {
+          streamedSuccessfully = true;
+          if (textChunk.includes('<thought>') || enableReasoning) {
+            res.write(`data: ${JSON.stringify({ thought: textChunk, done: false })}\n\n`);
+          } else {
+            res.write(`data: ${JSON.stringify({ text: textChunk, done: false })}\n\n`);
+          }
+        }
+      }
+
+      if (streamedSuccessfully) {
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        return res.end();
+      }
+    } catch (err: any) {
+      console.warn('Streaming GenAI warning:', err.message);
+    }
+  }
+
+  // Fallback realistic word-by-word streaming simulation
+  const thoughtText = `1. Analyze user prompt: "${prompt.slice(0, 45)}..."
+2. Speak naturally like ChatGPT / DeepSeek in plain, friendly English.
+3. Explain the actual subject deeply without lecturing on exam strategies.
+4. Conclude with a small concise summary.`;
+
+  res.write(`data: ${JSON.stringify({ thought: thoughtText, done: false })}\n\n`);
+
+  const responseText = generateDynamicAIResponse(prompt);
+  const words = responseText.split(' ');
+
+  for (let i = 0; i < words.length; i++) {
+    const chunkText = (i === 0 ? '' : ' ') + words[i];
+    res.write(`data: ${JSON.stringify({ text: chunkText, done: i === words.length - 1 })}\n\n`);
+    await new Promise(r => setTimeout(r, 20));
+  }
+
+  res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+  res.end();
+});
 
 // AI API Endpoint
 app.post('/api/ai', async (req, res) => {
@@ -163,6 +245,13 @@ app.post('/api/ai', async (req, res) => {
 
     if (ai) {
       // Try Gemini model aliases in priority order
+      const directInstruction = `You are an AI assistant just like ChatGPT and DeepSeek.
+1. Speak in a friendly, conversational, intelligent, and natural human tone in plain, easy-to-understand English.
+2. Directly answer the user's specific question. Thoroughly explain the actual topic, concepts, mechanics, and examples.
+3. NEVER lecture the user about "how to look at questions on exams", "exam preparation strategies", or say things like "In any academic discipline...". The user did NOT ask for exam advice—they asked about the actual subject. Talk directly about the topic itself!
+5. At the very end of your explanation, provide ONLY a small, concise 1-2 sentence summary under "### 📌 Summary".
+6. Do NOT ask any follow-up questions back.`;
+
       const modelsToTry = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.1-flash-lite'];
       for (const modelName of modelsToTry) {
         try {
@@ -170,8 +259,8 @@ app.post('/api/ai', async (req, res) => {
             model: modelName,
             contents: prompt,
             config: {
-              systemInstruction: systemInstruction || 'You are StudyForge AI, a friendly, ultra-smart academic tutor. Directly and conversationally answer what the user asked.',
-              temperature: 0.7,
+              systemInstruction: systemInstruction || directInstruction,
+              temperature: 0.5,
             }
           });
 

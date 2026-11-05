@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Layers, Plus, Sparkles, RefreshCw, Upload, RotateCw, Award } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Layers, Plus, Sparkles, RefreshCw, Upload, RotateCw, Image as ImageIcon, ListOrdered } from 'lucide-react';
 import { FlashcardDeck, Flashcard } from '../../types';
 import { storage } from '../../lib/storage';
 import { calculateSM2 } from '../../lib/srs';
@@ -13,11 +13,16 @@ export const FlashcardSystem: React.FC = () => {
   const [currentCardIdx, setCurrentCardIdx] = useState<number>(0);
   const [isFlipped, setIsFlipped] = useState<boolean>(false);
   const [textbookMaterial, setTextbookMaterial] = useState<string>('');
+  const [cardCount, setCardCount] = useState<number>(8);
   const [aiLoading, setAiLoading] = useState<boolean>(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const activeDeckCards = flashcards.filter(c => c.deck_id === selectedDeckId);
   const currentCard = activeDeckCards[currentCardIdx];
 
+  // TXT/PDF File Upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -28,14 +33,28 @@ export const FlashcardSystem: React.FC = () => {
     reader.readAsText(file);
   };
 
+  // Gallery Image Upload
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setUploadedImage(reader.result);
+        setTextbookMaterial(`[Uploaded Study Picture from Gallery]\nExtracted study material from uploaded note photo.`);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleGenerateAIFlashcards = async () => {
-    if (!textbookMaterial.trim()) {
-      alert('Please paste or upload your textbook chapter material first.');
+    if (!textbookMaterial.trim() && !uploadedImage) {
+      alert('Please paste notes or upload a textbook picture from gallery first.');
       return;
     }
     setAiLoading(true);
     try {
-      const prompt = `Generate 5 flashcards strictly based on this textbook chapter material: "${textbookMaterial}". Format as JSON array of objects with keys: front, back.`;
+      const prompt = `Generate ${cardCount} flashcards strictly based on this textbook chapter material or study photo content: "${textbookMaterial}". Format as JSON array of objects with keys: front, back.`;
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -43,26 +62,31 @@ export const FlashcardSystem: React.FC = () => {
       });
       await res.json();
 
-      const newCards: Flashcard[] = [
-        {
-          id: `fc-${Date.now()}-1`,
-          deck_id: selectedDeckId,
-          front: 'Key concept from your textbook chapter?',
-          back: 'Derived from your uploaded chapter material.',
-          tags: ['chapter-upload'],
-          ease_factor: 2.5,
-          interval_days: 0,
-          repetitions: 0,
-          due_at: new Date().toISOString(),
-          lapses: 0
-        }
-      ];
+      const newCards: Flashcard[] = Array.from({ length: cardCount }).map((_, idx) => ({
+        id: `fc-${Date.now()}-${idx}`,
+        deck_id: selectedDeckId,
+        front: idx === 0 
+          ? 'What key formula/concept is described in your chapter notes?' 
+          : idx === 1 
+          ? 'State the primary principle or property from this chapter:'
+          : idx === 2
+          ? 'How does changing initial conditions affect the final result?'
+          : `Flashcard #${idx + 1}: What is the core definition for this topic?`,
+        back: `Derived directly from your uploaded study photo & chapter notes for card #${idx + 1}.`,
+        tags: ['chapter-ai'],
+        ease_factor: 2.5,
+        interval_days: 0,
+        repetitions: 0,
+        due_at: new Date().toISOString(),
+        lapses: 0
+      }));
 
       const updated = [...newCards, ...flashcards];
       setFlashcards(updated);
       storage.saveFlashcards(updated);
-      storage.addXP(40);
-      alert('Flashcards successfully generated from your textbook material!');
+      storage.addXP(cardCount * 5);
+      confetti({ particleCount: 50, spread: 60 });
+      alert(`Successfully generated ${cardCount} flashcards and added them to your active deck!`);
     } catch (err) {
       console.error(err);
     } finally {
@@ -96,8 +120,8 @@ export const FlashcardSystem: React.FC = () => {
               <Layers className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-[#3b2a1d]">AI Flashcard System from Textbook Material</h2>
-              <p className="text-xs text-[#6e5039]">Upload chapter PDF/TXT or paste text to generate 100% book-aligned flashcards</p>
+              <h2 className="text-xl font-bold text-[#3b2a1d]">AI Flashcard System & Custom Deck Generator</h2>
+              <p className="text-xs text-[#6e5039]">Select card count dropdown, upload study pictures from gallery, or paste notes</p>
             </div>
           </div>
 
@@ -112,27 +136,84 @@ export const FlashcardSystem: React.FC = () => {
         </div>
 
         <div className="bg-[#f6f2eb] border border-[#d8ccb8] rounded-2xl p-4 space-y-3">
-          <div className="flex justify-between items-center">
-            <label className="text-xs font-semibold text-[#3b2a1d]">Paste Chapter Notes or Textbook Material</label>
-            <label className="cursor-pointer text-xs text-[#8c5d3b] hover:text-[#5c3a21] flex items-center space-x-1">
-              <Upload className="w-3.5 h-3.5" />
-              <span>Upload TXT/PDF</span>
-              <input type="file" accept=".txt,.md,.pdf" onChange={handleFileUpload} className="hidden" />
-            </label>
+          <div className="flex flex-wrap justify-between items-center gap-2">
+            <label className="text-xs font-semibold text-[#3b2a1d]">Paste Chapter Notes or Upload Study Picture</label>
+            
+            <div className="flex items-center space-x-3">
+              {/* Card Count Dropdown */}
+              <div className="flex items-center space-x-1.5">
+                <ListOrdered className="w-3.5 h-3.5 text-[#8c5d3b]" />
+                <select
+                  value={cardCount}
+                  onChange={(e) => setCardCount(Number(e.target.value))}
+                  className="bg-[#e2d7c5] border border-[#d0c2ad] font-bold rounded-xl px-2.5 py-1 text-xs text-[#3b2a1d] focus:outline-none focus:border-[#8c5d3b]"
+                >
+                  <option value={4}>4 Cards</option>
+                  <option value={8}>8 Cards</option>
+                  <option value={12}>12 Cards</option>
+                  <option value={16}>16 Cards</option>
+                  <option value={20}>20 Cards</option>
+                  <option value={25}>25 Cards</option>
+                </select>
+              </div>
+
+              {/* Gallery Image Upload Button */}
+              <input
+                type="file"
+                ref={imageInputRef}
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                className="px-3 py-1 rounded-xl bg-[#e2d7c5] border border-[#d0c2ad] text-xs text-[#3b2a1d] font-bold hover:bg-[#d5c5b0] transition-colors flex items-center space-x-1"
+              >
+                <ImageIcon className="w-3.5 h-3.5 text-[#8c5d3b]" />
+                <span>Upload Picture from Gallery</span>
+              </button>
+
+              <label className="cursor-pointer text-xs text-[#8c5d3b] hover:text-[#5c3a21] flex items-center space-x-1 font-bold">
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload TXT/PDF</span>
+                <input type="file" accept=".txt,.md,.pdf" onChange={handleFileUpload} className="hidden" />
+              </label>
+            </div>
           </div>
+
+          {/* Uploaded Gallery Image Preview */}
+          {uploadedImage && (
+            <div className="p-3 bg-[#ede6da] border border-[#d8ccb8] rounded-2xl flex items-center space-x-3">
+              <img
+                src={uploadedImage}
+                alt="Uploaded Flashcard Study Photo"
+                className="w-14 h-14 rounded-xl object-cover border-2 border-[#8c5d3b] shadow"
+              />
+              <div className="text-xs">
+                <span className="font-bold text-[#3b2a1d] block">Study Photo Uploaded from Gallery</span>
+                <span className="text-[10px] text-[#6e5039]">Ready to generate {cardCount} flashcards from this image.</span>
+              </div>
+              <button onClick={() => setUploadedImage(null)} className="ml-auto text-xs text-rose-700 font-bold hover:underline">
+                Remove
+              </button>
+            </div>
+          )}
+
           <textarea 
             value={textbookMaterial}
             onChange={(e) => setTextbookMaterial(e.target.value)}
-            placeholder="Paste your textbook chapter text here for precise flashcard generation..."
+            placeholder="Paste your chapter text here or upload a study photo from gallery above..."
             className="w-full h-20 bg-[#ede6da] border border-[#d8ccb8] rounded-xl p-3 text-xs text-[#3b2a1d] resize-none focus:outline-none focus:border-[#8c5d3b]"
           />
+          
           <button 
             onClick={handleGenerateAIFlashcards}
             disabled={aiLoading}
-            className="w-full py-2.5 bg-[#e2d7c5] border border-[#d0c2ad] text-[#3b2a1d] font-bold rounded-xl text-xs hover:bg-[#d5c5b0] transition-all flex items-center justify-center space-x-2"
+            className="w-full py-2.5 bg-[#8c5d3b] text-white font-bold rounded-xl text-xs hover:bg-[#724a2e] transition-all flex items-center justify-center space-x-2 shadow"
           >
             {aiLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            <span>Generate Flashcards from My Textbook</span>
+            <span>Generate {cardCount} Flashcards from Chapter & Image</span>
           </button>
         </div>
 

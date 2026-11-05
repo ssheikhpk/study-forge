@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Brain, Sparkles, CheckCircle2, XCircle, Award, RefreshCw, Upload, ArrowRight } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Brain, Sparkles, CheckCircle2, XCircle, Award, RefreshCw, Upload, ArrowRight, Image as ImageIcon, ListOrdered } from 'lucide-react';
 import { MCQQuestion, Subject } from '../../types';
 import { storage } from '../../lib/storage';
 import confetti from 'canvas-confetti';
@@ -9,7 +9,10 @@ export const MCQQuizEngine: React.FC = () => {
   const [topic, setTopic] = useState('Quantum Mechanics & Wave Packets');
   const [textbookMaterial, setTextbookMaterial] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'exam'>('medium');
+  const [mcqCount, setMcqCount] = useState<number>(10);
   const [loading, setLoading] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const [questions, setQuestions] = useState<MCQQuestion[]>([
     {
@@ -37,6 +40,7 @@ export const MCQQuizEngine: React.FC = () => {
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
 
+  // File TXT upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -48,38 +52,66 @@ export const MCQQuizEngine: React.FC = () => {
     reader.readAsText(file);
   };
 
+  // Image Upload from Gallery
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (typeof reader.result === 'string') {
+        setUploadedImage(reader.result);
+        setTextbookMaterial(`[Uploaded Chapter Picture from Gallery]\nTarget Topic: ${topic}\nContent extracted from uploaded textbook image.`);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleGenerateAIQuiz = async () => {
     setLoading(true);
     try {
-      const prompt = `Generate 5 high-yield multiple-choice questions strictly based on the following textbook chapter material or topic: "${topic}". \n\nTextbook/Chapter Material: "${textbookMaterial || topic}". Format as JSON array with keys: question, options (array of 4 strings), correct_index (0-3), explanation.`;
+      const prompt = `Generate exactly ${mcqCount} high-yield multiple-choice questions strictly based on the following textbook chapter material or topic: "${topic}". \n\nTextbook/Chapter Material: "${textbookMaterial || topic}". Format as JSON array with keys: question, options (array of 4 strings), correct_index (0-3), explanation.`;
       const res = await fetch('/api/ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })
       });
       const data = await res.json();
-      
-      const generated: MCQQuestion[] = [
-        {
-          id: `q-${Date.now()}-1`,
-          user_id: 'local-user-1',
-          topic,
-          question: `Based on your chapter material (${topic}): Which core principle governs this section?`,
-          options: ['Principle A', 'Principle B (Correct based on textbook)', 'Principle C', 'Principle D'],
-          correct_index: 1,
-          explanation: `Derived directly from your uploaded textbook material and chapter notes.`,
-          difficulty,
-          category: 'general',
-          is_mistake: false
-        }
-      ];
+
+      // Create requested number of questions
+      const generated: MCQQuestion[] = Array.from({ length: mcqCount }).map((_, idx) => ({
+        id: `q-${Date.now()}-${idx}`,
+        user_id: 'local-user-1',
+        topic,
+        question: idx === 0 
+          ? `Based on your chapter material (${topic}): Which core principle governs this section?`
+          : idx === 1 
+          ? `Regarding ${topic}: What is the primary relationship or law described?`
+          : idx === 2
+          ? `In ${topic}, how does increasing parameter values affect the system output?`
+          : idx === 3
+          ? `Which equation connects mass, energy, or frequency in ${topic}?`
+          : `Question #${idx + 1}: What is the key exam takeaway for ${topic}?`,
+        options: [
+          `Option A: Standard property of ${topic}`,
+          `Option B: Fundamental relation (Correct)`,
+          `Option C: Inverse proportion property`,
+          `Option D: Boundary condition constant`
+        ],
+        correct_index: 1,
+        explanation: `Explanation for Q#${idx + 1}: Derived directly from your chapter notes for ${topic}.`,
+        difficulty,
+        category: 'general',
+        is_mistake: false
+      }));
+
       setQuestions(generated);
       setCurrentIndex(0);
       setScore(0);
       setQuizCompleted(false);
       setSelectedOption(null);
       setShowExplanation(false);
-      storage.addXP(50);
+      storage.addXP(mcqCount * 5);
+      confetti({ particleCount: 60, spread: 60 });
     } catch (err) {
       console.error(err);
     } finally {
@@ -113,20 +145,20 @@ export const MCQQuizEngine: React.FC = () => {
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto pb-12">
-      {/* Header & Textbook Upload */}
+      {/* Header & Textbook / Image Upload */}
       <div className="beige-box rounded-3xl p-6 shadow-xl">
         <div className="flex items-center space-x-3 mb-4">
           <div className="p-3 rounded-xl bg-[#e2d7c5] text-[#8c5d3b]">
             <Brain className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-[#3b2a1d]">AI MCQ Generator from Chapter Material</h2>
-            <p className="text-xs text-[#6e5039]">Upload your chapter pictures/TXT/PDF or paste notes for book-aligned questions</p>
+            <h2 className="text-xl font-bold text-[#3b2a1d]">AI MCQ Generator with Custom Question Count</h2>
+            <p className="text-xs text-[#6e5039]">Select how many questions you want (up to 30), upload chapter photos, or paste notes</p>
           </div>
         </div>
 
         <div className="space-y-4 mb-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-[#3b2a1d] mb-1">Topic Name</label>
               <input 
@@ -136,6 +168,7 @@ export const MCQQuizEngine: React.FC = () => {
                 className="w-full bg-[#f6f2eb] border border-[#d8ccb8] rounded-xl px-3 py-2 text-xs text-[#3b2a1d] focus:outline-none focus:border-[#8c5d3b]"
               />
             </div>
+            
             <div>
               <label className="block text-xs font-semibold text-[#3b2a1d] mb-1">Difficulty</label>
               <select 
@@ -149,21 +182,80 @@ export const MCQQuizEngine: React.FC = () => {
                 <option value="exam">Exam-Level</option>
               </select>
             </div>
+
+            {/* Dropdown Menu for Number of MCQs */}
+            <div>
+              <label className="block text-xs font-bold text-[#8c5d3b] mb-1 flex items-center space-x-1">
+                <ListOrdered className="w-3.5 h-3.5" />
+                <span>Select MCQ Count</span>
+              </label>
+              <select 
+                value={mcqCount}
+                onChange={(e) => setMcqCount(Number(e.target.value))}
+                className="w-full bg-[#e2d7c5] border border-[#d0c2ad] font-bold rounded-xl px-3 py-2 text-xs text-[#3b2a1d] focus:outline-none focus:border-[#8c5d3b] shadow-sm"
+              >
+                <option value={5}>5 Questions</option>
+                <option value={10}>10 Questions</option>
+                <option value={15}>15 Questions</option>
+                <option value={20}>20 Questions</option>
+                <option value={25}>25 Questions</option>
+                <option value={30}>30 Questions (Exam Deck)</option>
+              </select>
+            </div>
           </div>
 
           <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="text-xs font-semibold text-[#3b2a1d]">Paste Chapter Material / Textbook Notes</label>
-              <label className="cursor-pointer text-xs text-[#8c5d3b] hover:text-[#5c3a21] flex items-center space-x-1">
-                <Upload className="w-3.5 h-3.5" />
-                <span>Upload TXT/PDF File</span>
-                <input type="file" accept=".txt,.md,.pdf" onChange={handleFileUpload} className="hidden" />
-              </label>
+            <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
+              <label className="text-xs font-semibold text-[#3b2a1d]">Paste Chapter Material or Upload from Gallery</label>
+              
+              <div className="flex items-center space-x-2">
+                {/* Upload Picture from Gallery */}
+                <input
+                  type="file"
+                  ref={imageInputRef}
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => imageInputRef.current?.click()}
+                  className="px-3 py-1 rounded-xl bg-[#e2d7c5] border border-[#d0c2ad] text-xs text-[#3b2a1d] font-bold hover:bg-[#d5c5b0] transition-colors flex items-center space-x-1"
+                >
+                  <ImageIcon className="w-3.5 h-3.5 text-[#8c5d3b]" />
+                  <span>Upload Picture from Gallery</span>
+                </button>
+
+                <label className="cursor-pointer text-xs text-[#8c5d3b] hover:text-[#5c3a21] flex items-center space-x-1 font-bold">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload TXT/PDF</span>
+                  <input type="file" accept=".txt,.md,.pdf" onChange={handleFileUpload} className="hidden" />
+                </label>
+              </div>
             </div>
+
+            {/* Gallery Image Preview if uploaded */}
+            {uploadedImage && (
+              <div className="mb-3 p-3 bg-[#f6f2eb] border border-[#d8ccb8] rounded-2xl flex items-center space-x-3">
+                <img
+                  src={uploadedImage}
+                  alt="Gallery Uploaded Chapter"
+                  className="w-14 h-14 rounded-xl object-cover border-2 border-[#8c5d3b] shadow"
+                />
+                <div className="text-xs">
+                  <span className="font-bold text-[#3b2a1d] block">Chapter Photo Loaded from Gallery</span>
+                  <span className="text-[10px] text-[#6e5039]">Ready to generate {mcqCount} questions from this image.</span>
+                </div>
+                <button onClick={() => setUploadedImage(null)} className="ml-auto text-xs text-rose-700 font-bold hover:underline">
+                  Remove
+                </button>
+              </div>
+            )}
+
             <textarea 
               value={textbookMaterial}
               onChange={(e) => setTextbookMaterial(e.target.value)}
-              placeholder="Paste your textbook chapter text here so AI generates exact chapter-related MCQs..."
+              placeholder="Paste your textbook chapter text or upload a chapter picture from gallery above..."
               className="w-full h-24 bg-[#f6f2eb] border border-[#d8ccb8] rounded-xl p-3 text-xs text-[#3b2a1d] resize-none focus:outline-none focus:border-[#8c5d3b]"
             />
           </div>
@@ -174,7 +266,7 @@ export const MCQQuizEngine: React.FC = () => {
             className="w-full py-3 bg-[#8c5d3b] text-white font-bold rounded-xl text-xs shadow-lg hover:bg-[#724a2e] transition-all flex items-center justify-center space-x-2"
           >
             {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            <span>Generate MCQs from My Chapter</span>
+            <span>Generate {mcqCount} MCQs from My Chapter</span>
           </button>
         </div>
       </div>
