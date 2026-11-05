@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Sparkles, Flame, Trophy, CheckCircle2, Send, Bot, User, Clock, ArrowRight, HeartHandshake
+  Sparkles, Flame, Trophy, CheckCircle2, Clock, ArrowRight, HeartHandshake, BookOpen, Brain, Layers, Cpu, Code2
 } from 'lucide-react';
 import { UserProfile, Subject } from '../../types';
 import { storage } from '../../lib/storage';
@@ -21,50 +21,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, subjects, setActiveT
   const diffTime = examDate.getTime() - today.getTime();
   const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
 
-  const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([
-    { role: 'assistant', text: `Hello ${user.full_name}! I'm your StudyForge AI Assistant. Ready to ace your "${paperName}" exam? Ask me anything!` }
+  const [todaysTasks, setTodaysTasks] = useState([
+    { id: '1', title: 'Quantum Mechanics Schrödinger Eq. Review', duration: '45m', type: 'revision', completed: true, tab: 'notes' },
+    { id: '2', title: 'Flashcards SM-2 Due Deck (15 cards)', duration: '20m', type: 'flashcards', completed: false, tab: 'flashcards' },
+    { id: '3', title: 'Organic Chem Mechanism Quiz & Weakness Fix', duration: '30m', type: 'mock', completed: false, tab: 'mcq' },
+    { id: '4', title: 'Python Code & Algorithm Practice', duration: '25m', type: 'coding', completed: false, tab: 'coding' },
   ]);
-  const [chatInput, setChatInput] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  const todaysTasks = [
-    { id: '1', title: 'Quantum Mechanics Schrödinger Eq. Review', duration: '45m', type: 'revision', completed: true },
-    { id: '2', title: 'Flashcards SM-2 Due Deck (15 cards)', duration: '20m', type: 'flashcards', completed: false },
-    { id: '3', title: 'Organic Chem Mechanism Quiz & Weakness Fix', duration: '30m', type: 'mock', completed: false },
-    { id: '4', title: 'Python Code & Algorithm Practice', duration: '25m', type: 'coding', completed: false },
-  ];
+  const handleToggleTask = (id: string) => {
+    setTodaysTasks(prev => prev.map(task => {
+      if (task.id === id) {
+        const nextState = !task.completed;
+        if (nextState) storage.addXP(20);
+        return { ...task, completed: nextState };
+      }
+      return task;
+    }));
+  };
 
   const handleSavePaper = (e: React.FormEvent) => {
     e.preventDefault();
     localStorage.setItem('studyforge_paper_name', paperName);
     localStorage.setItem('studyforge_exam_date', examDateStr);
     setIsEditingPaper(false);
-  };
-
-  const handleSendChat = async () => {
-    if (!chatInput.trim()) return;
-    const updated = [...chatMessages, { role: 'user' as const, text: chatInput }];
-    setChatMessages(updated);
-    setChatInput('');
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: chatInput,
-          systemInstruction: `You are StudyForge AI tutor for target paper: "${paperName}". Answer directly, conversationally, and accurately to the student's question.`
-        })
-      });
-      const data = await res.json();
-      setChatMessages([...updated, { role: 'assistant', text: data.text }]);
-      storage.addXP(10);
-    } catch (err) {
-      setChatMessages([...updated, { role: 'assistant', text: 'You are doing amazing! Keep pushing forward toward your paper success.' }]);
-    } finally {
-      setLoading(false);
-    }
   };
 
   return (
@@ -151,103 +130,117 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, subjects, setActiveT
         </div>
       </div>
 
-      {/* Two Column Grid: Today's Plan & AI Chat */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Two Column Grid: Today's Plan & Active Subjects Progress */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Today's Study Plan */}
-        <div className="beige-box rounded-3xl p-6 shadow-xl">
-          <div className="flex items-center justify-between mb-6">
+        <div className="beige-box rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-bold text-[#3b2a1d] flex items-center space-x-2">
+                  <Clock className="w-5 h-5 text-[#8c5d3b]" />
+                  <span>Today's Study Plan</span>
+                </h2>
+                <p className="text-xs text-[#6e5039]">Check off items to earn XP</p>
+              </div>
+              <button 
+                onClick={() => setActiveTab('planner')}
+                className="text-xs font-semibold text-[#8c5d3b] hover:text-[#633f25] flex items-center space-x-1"
+              >
+                <span>Full Planner</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {todaysTasks.map((task) => (
+                <div 
+                  key={task.id}
+                  onClick={() => handleToggleTask(task.id)}
+                  className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer ${
+                    task.completed 
+                      ? 'bg-[#e2d7c5]/50 border-[#d0c2ad] opacity-75' 
+                      : 'bg-[#f0e8dc] border-[#d8ccb8] hover:bg-[#eae1d0] shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                      task.completed ? 'bg-emerald-600 text-white' : 'bg-[#d8c7b0] text-[#5c3a21]'
+                    }`}>
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className={`text-xs sm:text-sm font-semibold ${task.completed ? 'line-through text-[#7c634e]' : 'text-[#3b2a1d]'}`}>
+                        {task.title}
+                      </h4>
+                      <span className="text-[10px] text-[#8c5d3b] font-bold uppercase">{task.type}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-bold text-[#3b2a1d] bg-[#e2d7c5] px-3 py-1 rounded-xl border border-[#d0c2ad]">
+                      {task.duration}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveTab(task.tab);
+                      }}
+                      className="text-[11px] font-bold text-[#8c5d3b] hover:underline"
+                    >
+                      Open
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Active Subjects & Preparation Progress */}
+        <div className="beige-box rounded-3xl p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between mb-2">
             <div>
               <h2 className="text-lg font-bold text-[#3b2a1d] flex items-center space-x-2">
-                <Clock className="w-5 h-5 text-[#8c5d3b]" />
-                <span>Today's Study Plan</span>
+                <BookOpen className="w-5 h-5 text-[#8c5d3b]" />
+                <span>Subject Preparation Progress</span>
               </h2>
-              <p className="text-xs text-[#6e5039]">Optimized by your SRS queue</p>
+              <p className="text-xs text-[#6e5039]">Track your syllabus completion across subjects</p>
             </div>
             <button 
-              onClick={() => setActiveTab('planner')}
+              onClick={() => setActiveTab('notes')}
               className="text-xs font-semibold text-[#8c5d3b] hover:text-[#633f25] flex items-center space-x-1"
             >
-              <span>Full Planner</span>
+              <span>Notes Workspace</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="space-y-3">
-            {todaysTasks.map((task) => (
-              <div 
-                key={task.id}
-                className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
-                  task.completed 
-                    ? 'bg-[#e2d7c5]/50 border-[#d0c2ad] opacity-75' 
-                    : 'bg-[#f0e8dc] border-[#d8ccb8] shadow-sm'
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                    task.completed ? 'bg-emerald-200 text-emerald-800' : 'bg-[#d8c7b0] text-[#5c3a21]'
-                  }`}>
-                    <CheckCircle2 className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className={`text-xs sm:text-sm font-semibold ${task.completed ? 'line-through text-[#7c634e]' : 'text-[#3b2a1d]'}`}>
-                      {task.title}
-                    </h4>
-                    <span className="text-[10px] text-[#8c5d3b] font-bold uppercase">{task.type}</span>
-                  </div>
+          <div className="space-y-4">
+            {subjects.map((sub) => (
+              <div key={sub.id} className="bg-[#f6f2eb] border border-[#d8ccb8] p-4 rounded-2xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#3b2a1d]">{sub.name}</span>
+                  <span className="text-xs font-black text-[#8c5d3b]">{sub.progress}%</span>
                 </div>
-                <span className="text-xs font-bold text-[#3b2a1d] bg-[#e2d7c5] px-3 py-1 rounded-xl border border-[#d0c2ad]">
-                  {task.duration}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* AI Chat Widget */}
-        <div className="lg:col-span-2 beige-box rounded-3xl p-6 shadow-xl flex flex-col h-[480px]">
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="p-2 rounded-xl bg-[#e2d7c5] text-[#8c5d3b]">
-              <Sparkles className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-[#3b2a1d]">StudyForge AI Assistant</h2>
-              <p className="text-[10px] text-[#6e5039]">Ask paper strategy or study questions</p>
-            </div>
-          </div>
-
-          <div className="flex-1 bg-[#f6f2eb] border border-[#d8ccb8] rounded-2xl p-3 overflow-y-auto space-y-3 text-xs mb-3">
-            {chatMessages.map((msg, idx) => (
-              <div key={idx} className={`flex items-start space-x-2 ${msg.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                  msg.role === 'user' ? 'bg-[#8c5d3b] text-white font-bold text-[10px]' : 'bg-[#e2d7c5] text-[#5c3a21] border border-[#d0c2ad]'
-                }`}>
-                  {msg.role === 'user' ? <User className="w-3 h-3" /> : <Bot className="w-3 h-3" />}
+                {/* Progress Bar */}
+                <div className="w-full bg-[#e2d7c5] h-2.5 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-[#8c5d3b] to-[#a3724e] h-full rounded-full transition-all duration-500"
+                    style={{ width: `${sub.progress}%` }}
+                  />
                 </div>
-                <div className={`p-3 rounded-2xl max-w-[80%] leading-relaxed ${
-                  msg.role === 'user' ? 'bg-[#8c5d3b] text-white font-medium rounded-tr-none' : 'bg-[#ede6da] border border-[#d8ccb8] text-[#3b2a1d] rounded-tl-none shadow-sm'
-                }`}>
-                  <p>{msg.text}</p>
+                <div className="flex items-center justify-between text-[10px] text-[#6e5039] pt-1">
+                  <span>Exam Date: {sub.target_exam_date}</span>
+                  <button 
+                    onClick={() => setActiveTab('mcq')}
+                    className="font-bold text-[#8c5d3b] hover:underline"
+                  >
+                    Practice MCQs &rarr;
+                  </button>
                 </div>
               </div>
             ))}
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <input 
-              type="text"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
-              placeholder="Ask AI study question..."
-              className="flex-1 bg-[#f6f2eb] border border-[#d8ccb8] rounded-xl px-3 py-2 text-xs text-[#3b2a1d] focus:outline-none focus:border-[#8c5d3b]"
-            />
-            <button 
-              onClick={handleSendChat}
-              disabled={loading}
-              className="p-2 bg-[#8c5d3b] text-white rounded-xl font-bold hover:bg-[#724a2e] transition-colors shadow-md"
-            >
-              <Send className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </div>
